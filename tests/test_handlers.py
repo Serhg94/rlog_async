@@ -3,9 +3,9 @@ import logging
 import redis
 import time
 
-from rlog import RedisHandler
-from rlog import RedisListHandler
-from rlog._compat import json
+from rlog_async import RedisHandler
+from rlog_async import RedisListHandler
+from rlog_async._compat import json
 from ._compat import patch, Mock
 
 

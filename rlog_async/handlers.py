@@ -1,6 +1,12 @@
 # coding: utf-8
 import logging
 import redis
+import threading
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
+
 
 from .formatters import JSONFormatter
 
@@ -40,25 +46,40 @@ class RedisListHandler(logging.Handler):
         Create a new logger for the given key and redis_client.
         """
         logging.Handler.__init__(self, level)
+        self.send_thread = threading.Thread(target=self.work)
+        self.send_thread.setName('Redis logger handler %s' % key)
         self.key = key
         self.redis_client = redis_client or redis.Redis(**redis_kwargs)
         self.formatter = formatter
         self.max_messages = max_messages
         self.ttl = ttl
-
-    def emit(self, record):
+        self.msg_queue = Queue.Queue(maxsize=0 if max_messages is None else max_messages)
+        self.send_thread.start()
+        
+    def work(self):
         """
         Publish record to redis logging list
         """
+        while True:
+            try:
+                msg = self.msg_queue.get()
+                if self.max_messages:
+                    p = self.redis_client.pipeline()
+                    p.rpush(self.key, self.format(msg))
+                    p.ltrim(self.key, -self.max_messages, -1)
+                    p.execute()
+                else:
+                    self.redis_client.rpush(self.key, self.format(msg))
+                if self.ttl:
+                    self.redis_client.expire(self.key, self.ttl)
+            except redis.RedisError:
+                pass
+
+    def emit(self, record):
+        """
+        Want to send record to redis logging list
+        """
         try:
-            if self.max_messages:
-                p = self.redis_client.pipeline()
-                p.rpush(self.key, self.format(record))
-                p.ltrim(self.key, -self.max_messages, -1)
-                p.execute()
-            else:
-                self.redis_client.rpush(self.key, self.format(record))
-            if self.ttl:
-                self.redis_client.expire(self.key, self.ttl)
-        except redis.RedisError:
+            self.msg_queue.put_nowait(record)
+        except Queue.Full:
             pass

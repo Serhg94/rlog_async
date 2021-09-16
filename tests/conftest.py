@@ -2,7 +2,7 @@
 import logging
 import pytest
 
-from rlog import RedisHandler
+from rlog_async import RedisHandler
 
 
 @pytest.fixture

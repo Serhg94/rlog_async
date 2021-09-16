@@ -18,3 +18,8 @@ See: [PR #8](https://github.com/lobziik/rlog/pull/8)
 * Added python 3.6 to travis build
 * Drop Python 3.3 from travis build
 * Tox config changed
+
+0.5 - 16.06.2018
+----------------
+
+* Added queue for writting operations

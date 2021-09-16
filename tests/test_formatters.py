@@ -2,8 +2,8 @@
 import logging
 import sys
 
-from rlog._compat import json, PY3, PYPY
-from rlog.formatters import JSONFormatter
+from rlog_async._compat import json, PY3, PYPY
+from rlog_async.formatters import JSONFormatter
 
 
 def get_result_record(**kwargs):
